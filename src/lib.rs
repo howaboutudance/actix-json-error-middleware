@@ -1,3 +1,11 @@
+//     Copyright 2022 Michael Penhallegon <mike@hematite.tech>
+//
+//    Licensed under the Apache License, Version 2.0 (the "License");
+//    you may not use this file except in compliance with the License.
+//    You may obtain a copy of the License at
+//
+//        http://www.apache.org/licenses/LICENSE-2.0
+
 use std::future::{Ready, ready};
 
 use actix_web::{dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform}, Error, http::header, HttpResponseBuilder};
