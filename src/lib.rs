@@ -46,8 +46,13 @@ impl<S, B> Service<ServiceRequest> for JsonErrorMiddlewareDefinition<S>
             let res_result: Result<ServiceResponse<B>, Error> = fut.await;
             let mut res = res_result.ok().expect("response found");
 
+            // Check status_code value. If above 299, create a response that has a json blob
+            // generated from JsonErrorMessage
             let status_code = res.status();
+
             if status_code.as_u16() > 299 {
+                // generate an EitherBody, which is an either a success, and thus just json content-type
+                // or the specialized JSONErrorMessageResponse
                 let response = HttpResponseBuilder::new(status_code).json(
                     JsonErrorMessage {
                         error: status_code.as_u16(),
@@ -99,7 +104,7 @@ mod tests {
     use super::*;
 
 
-    /// Arbitrary Endpoint Check
+    /// Basic Endpoint Check
     ///
     /// takes an arbitrary endpoint that is not handler, sending a GET request knowing it should
     /// return with a `404 NOT FOUND` status and does checks that:
