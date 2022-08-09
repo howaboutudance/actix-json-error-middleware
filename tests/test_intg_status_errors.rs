@@ -2,9 +2,9 @@ use actix_web_json_error_middleware::{JsonMiddleware, JsonErrorMessage};
 
 use std::ops::Range;
 
-use actix_web::{App, HttpResponse, HttpResponseBuilder, test, web};
+use actix_web::{App, HttpResponse, HttpResponseBuilder, test, web, http::Method};
 use actix_web::http::StatusCode;
-use test::TestRequest;
+use test::{TestRequest};
 
 // Test Handlers
 
@@ -15,21 +15,6 @@ use test::TestRequest;
 ///
 /// Take a response from parameterized path `/status/` and returns
 /// a response with the corresponding  HTTP status code
-///
-/// # Examples
-/// ```
-/// use actix_web::{App, web, test};
-/// use test::TestRequest;
-/// let app = test::init_service(
-///     App::new()
-///         .route("/status/{code}", web::route().to(status_handler))
-/// ).await;
-///
-/// let req = TestRequest::get().uri("/status/4o4").to_request();
-/// let resp = test::call_service(&app, req).await;
-///
-/// assert_eq!(resp.status().as_u16(), 404);
-/// ```
 async fn status_handler(path: web::Path<(u16, )>) -> HttpResponse {
     let status_code = path.into_inner().0;
     let status_code_obj = StatusCode::from_u16(status_code).unwrap();
@@ -126,63 +111,28 @@ async fn test_intg_400s_put_errors() {
 /// Tests Iteratively PUT Requests For HTTP Status Codes 500-512
 #[actix_web::test]
 async fn test_intg_500s_put_errors() {
-    help_test_put_by_range(500u16..412u16).await
+    help_request_by_range(500u16..412u16, &Method::PUT).await
 }
-
 
 // Test Helpers
 
 /// Helps Iteratively Test a Range of Status Codes with POST Requests
 async fn help_test_post_by_range(status_range: Range<u16>) {
-    let app = test::init_service(
-        App::new()
-            .wrap(JsonMiddleware)
-            .route("/status/{code}", web::route().to(status_handler))
-    ).await;
-
-    for status_code in status_range {
-        let status_code_endpoint = format!("/status/{}", status_code);
-        let req = TestRequest::post().uri(status_code_endpoint.as_str()).to_request();
-        let resp = test::call_service(&app, req).await;
-
-        assert_eq!(resp.status().as_u16(), status_code);
-        assert_eq!(resp.headers().get("content-type").unwrap(), "application/json");
-
-        if status_code > 299 {
-            let req_json = TestRequest::put().uri(status_code_endpoint.as_str()).to_request();
-            let resp_json: JsonErrorMessage = test::call_and_read_body_json(&app, req_json).await;
-            assert_eq!(resp_json.error, status_code)
-        }
-    }
+    help_request_by_range(status_range, &Method::POST).await
 }
 
 
 /// Helps Iteratively Test a Range of Status Codes with GET Requests
 async fn help_test_get_by_range(status_range: Range<u16>) {
-    let app = test::init_service(
-        App::new()
-            .wrap(JsonMiddleware)
-            .route("/status/{code}", web::route().to(status_handler))
-    ).await;
-
-    for status_code in status_range {
-        let status_code_endpoint = format!("/status/{}", status_code);
-        let req = TestRequest::get().uri(status_code_endpoint.as_str()).to_request();
-        let resp = test::call_service(&app, req).await;
-
-        assert_eq!(resp.status().as_u16(), status_code);
-        assert_eq!(resp.headers().get("content-type").unwrap(), "application/json");
-
-        if status_code > 299 {
-            let req_json = TestRequest::put().uri(status_code_endpoint.as_str()).to_request();
-            let resp_json: JsonErrorMessage = test::call_and_read_body_json(&app, req_json).await;
-            assert_eq!(resp_json.error, status_code)
-        }
-    }
+    help_request_by_range(status_range, &Method::GET).await
 }
 
 /// Helps Iteratively Test a Range of Status Codes with PUT Requests
 async fn help_test_put_by_range(status_range: Range<u16>) {
+    help_request_by_range(status_range, &Method::PUT).await
+}
+
+async fn help_request_by_range(status_range: Range<u16>, method_type: &Method) {
     let app = test::init_service(
         App::new()
             .wrap(JsonMiddleware)
@@ -191,14 +141,14 @@ async fn help_test_put_by_range(status_range: Range<u16>) {
 
     for status_code in status_range {
         let status_code_endpoint = format!("/status/{}", status_code);
-        let req = TestRequest::put().uri(status_code_endpoint.as_str()).to_request();
+        let req = TestRequest::method(TestRequest::default(), Method::from(method_type)).uri(status_code_endpoint.as_str()).to_request();
         let resp = test::call_service(&app, req).await;
 
         assert_eq!(resp.status().as_u16(), status_code);
         assert_eq!(resp.headers().get("content-type").unwrap(), "application/json");
 
         if status_code > 299 {
-            let req_json = TestRequest::put().uri(status_code_endpoint.as_str()).to_request();
+            let req_json = TestRequest::method(TestRequest::default(), Method::from(method_type)).uri(status_code_endpoint.as_str()).to_request();
             let resp_json: JsonErrorMessage = test::call_and_read_body_json(&app, req_json).await;
             assert_eq!(resp_json.error, status_code)
         }
