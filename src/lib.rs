@@ -141,10 +141,10 @@ mod tests {
         assert_eq!(resp.headers().get("content-type").unwrap(), "application/json")
     }
 
-    /// Arbitary Endpoint Check
+    /// Arbitrary Endpoint Check
     ///
-    /// takes an arbitrary endpoint that is not handler, sending a GET request knowing it should reutrn with
-    /// `a 404 NOT FOUND` status and does checks that:
+    /// takes an arbitrary endpoint that is not handler, sending a GET request knowing it should
+    /// return with a `404 NOT FOUND` status and does checks that:
     /// - content-type header is application/json
     /// - HTTP status code is 404
     /// - The response body is JSON
