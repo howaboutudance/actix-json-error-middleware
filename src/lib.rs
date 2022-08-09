@@ -8,11 +8,13 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct JsonErrorMessage {
+    /// A JSON Serializable Struct for an Error Response
     pub error: u16,
     pub message: String,
 }
 
 pub struct JsonErrorMiddlewareDefinition<S> {
+    /// A Middleware Definition Struct for The Service Component of the Middleware
     service: S,
 }
 
@@ -41,7 +43,7 @@ impl<S, B> Service<ServiceRequest> for JsonErrorMiddlewareDefinition<S>
                 let response = HttpResponseBuilder::new(status_code).json(
                     JsonErrorMessage {
                         error: status_code.as_u16(),
-                        message: "error".to_string(),
+                        message: status_code.to_string(),
                     }
                 ).map_into_right_body();
                 return Ok(ServiceResponse::into_response(res, response));
@@ -72,8 +74,8 @@ impl<S, B> Transform<S, ServiceRequest> for JsonMiddleware
 {
     type Response = ServiceResponse<EitherBody<B>>;
     type Error = Error;
-    type InitError = ();
     type Transform = JsonErrorMiddlewareDefinition<S>;
+    type InitError = ();
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
@@ -91,12 +93,38 @@ mod tests {
 
     use super::*;
 
+    // Test Handlers
+
+    /// Test handler for status code responses
+    ///
+    ///  # Arguments
+    ///  * `path` - A wen::Path object with the values after /status/
+    ///
+    /// Take a response from parameterized path `/status/` and returns
+    /// a response with the corresponding  HTTP status code
+    ///
+    /// # Examples
+    /// ```
+    /// use actix_web::{App, web, test};
+    /// use test::TestRequest;
+    /// let app = test::init_service(
+    ///     App::new()
+    ///         .route("/status/{code}", web::route().to(status_handler))
+    /// ).await;
+    ///
+    /// let req = TestRequest::get().uri("/status/4o4").to_request();
+    /// let resp = test::call_service(&app, req).await;
+    ///
+    /// assert_eq!(resp.status().as_u16(), 404);
+    /// ```
     async fn status_handler(path: web::Path<(u16, )>) -> HttpResponse {
         let status_code = path.into_inner().0;
         let status_code_obj = StatusCode::from_u16(status_code).unwrap();
         HttpResponseBuilder::new(status_code_obj).finish()
     }
 
+    /// Base test to check test handler functionality
+    /// request an endpoint that returns 404 and checks content-type
     #[actix_web::test]
     async fn test_get_404_json_content_type() {
         let app = test::init_service(
@@ -113,6 +141,14 @@ mod tests {
         assert_eq!(resp.headers().get("content-type").unwrap(), "application/json")
     }
 
+    /// Arbitary Endpoint Check
+    ///
+    /// takes an arbitrary endpoint that is not handler, sending a GET request knowing it should reutrn with
+    /// `a 404 NOT FOUND` status and does checks that:
+    /// - content-type header is application/json
+    /// - HTTP status code is 404
+    /// - The response body is JSON
+    /// - The JSON response body has a key/value pair of `{"error": 404}`
     #[actix_web::test]
     async fn test_get_non_status_endpoint() {
         let test_uri = "/foo";
@@ -133,69 +169,86 @@ mod tests {
         assert_eq!(resp_json.error, 404)
     }
 
+    // Status Code Range Tests
+
+    /// Tests Iteratively GET Requests For HTTP Status Codes 200-299
     #[actix_web::test]
     async fn test_200s_get_errors() {
-        test_get_by_range(400u16..499u16).await
+        help_test_get_by_range(400u16..499u16).await
     }
 
+    /// Tests Iteratively GET Requests For HTTP Status Codes 300-399
     #[actix_web::test]
     async fn test_300s_get_errors() {
-        test_get_by_range(300u16..399u16).await
+        help_test_get_by_range(300u16..399u16).await
     }
 
+    /// Tests Iteratively GET Requests For HTTP Status Codes 400-499
     #[actix_web::test]
     async fn test_400s_get_errors() {
-        test_get_by_range(400u16..499u16).await
+        help_test_get_by_range(400u16..499u16).await
     }
 
+    /// Tests Iteratively GET Requests For HTTP Status Codes 500-512
     #[actix_web::test]
     async fn test_500s_get_errors() {
-        test_get_by_range(500u16..512u16).await
+        help_test_get_by_range(500u16..512u16).await
     }
 
+    /// Tests Iteratively POST Requests For HTTP Status Codes 200-299
     #[actix_web::test]
     async fn test_200s_post_errors() {
-        test_post_by_range(200u16..299u16).await
+        help_test_post_by_range(200u16..299u16).await
     }
 
+    /// Tests Iteratively POST Requests For HTTP Status Codes 300-399
     #[actix_web::test]
     async fn test_300s_post_errors() {
-        test_post_by_range(300u16..399u16).await
+        help_test_post_by_range(300u16..399u16).await
     }
 
+    /// Tests Iteratively POST Requests For HTTP Status Codes 400-499
     #[actix_web::test]
     async fn test_400s_post_errors() {
-        test_post_by_range(400u16..499u16).await
+        help_test_post_by_range(400u16..499u16).await
     }
 
+    /// Tests Iteratively POST Requests For HTTP Status Codes 500-512
     #[actix_web::test]
     async fn test_500s_post_errors() {
-        test_post_by_range(500u16..512u16).await
+        help_test_post_by_range(500u16..512u16).await
     }
 
 
+    /// Tests Iteratively PUT Requests For HTTP Status Codes 200-299
     #[actix_web::test]
     async fn test_200s_put_errors() {
-        test_put_by_range(200u16..299u16).await
+        help_test_put_by_range(200u16..299u16).await
     }
 
+    /// Tests Iteratively PUT Requests For HTTP Status Codes 300-399
     #[actix_web::test]
     async fn test_300s_put_errors() {
-        test_put_by_range(300u16..399u16).await
+        help_test_put_by_range(300u16..399u16).await
     }
 
+    /// Tests Iteratively PUT Requests For HTTP Status Codes 400-499
     #[actix_web::test]
     async fn test_400s_put_errors() {
-        test_put_by_range(400u16..499u16).await
+        help_test_put_by_range(400u16..499u16).await
     }
 
+    /// Tests Iteratively PUT Requests For HTTP Status Codes 500-512
     #[actix_web::test]
     async fn test_500s_put_errors() {
-        test_put_by_range(500u16..412u16).await
+        help_test_put_by_range(500u16..412u16).await
     }
 
 
-    async fn test_post_by_range(status_range: Range<u16>) {
+    // Test Helpers
+
+    /// Helps Iteratively Test a Range of Status Codes with POST Requests
+    async fn help_test_post_by_range(status_range: Range<u16>) {
         let app = test::init_service(
             App::new()
                 .wrap(JsonMiddleware)
@@ -219,7 +272,8 @@ mod tests {
     }
 
 
-    async fn test_get_by_range(status_range: Range<u16>) {
+    /// Helps Iteratively Test a Range of Status Codes with GET Requests
+    async fn help_test_get_by_range(status_range: Range<u16>) {
         let app = test::init_service(
             App::new()
                 .wrap(JsonMiddleware)
@@ -242,7 +296,8 @@ mod tests {
         }
     }
 
-    async fn test_put_by_range(status_range: Range<u16>) {
+    /// Helps Iteratively Test a Range of Status Codes with PUT Requests
+    async fn help_test_put_by_range(status_range: Range<u16>) {
         let app = test::init_service(
             App::new()
                 .wrap(JsonMiddleware)

@@ -1,10 +1,16 @@
 [package]
 name = "actix-web-json-error-middleware"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Michael Penhallegon <mike@hemaitte.tech>"]
 license = "Apche-2.0"
 edition = "2021"
 description = "A middleware to generate all http error responses as json doc and content type"
+keywords = ["actix", "actix-web", "middleware", "json", "web"]
+categories = ["web-programming"]
+repository = "https://github.com/howaboutudance/actix-json-error-middleware.git"
+readme = "README.md"
+exclude = [".gitignore", ".idea/", ".actix-json-middlware.iml"]
+
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
