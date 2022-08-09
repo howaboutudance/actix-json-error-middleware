@@ -70,7 +70,6 @@ impl<S, B> Service<ServiceRequest> for JsonErrorMiddlewareDefinition<S>
     }
 }
 
-
 pub struct JsonMiddleware;
 
 impl JsonMiddleware {
